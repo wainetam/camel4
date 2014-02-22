@@ -8,6 +8,8 @@ var cheerio = require('cheerio'),
     express = require('express'),
     async = require('async'),
     http = require('http');
+    models = require('./models');
+
     // swig = require('swig');
 
 var routes = require('./routes');
@@ -45,6 +47,7 @@ http.createServer(app).listen(app.get('port'), function(){
 // var baseUrlObj = { uri: "http://careerosity.com/questions" };
 var baseUrlObj = { uri: "http://192.168.1.177:3000" };
 var loginUrlObj = { uri: "http://192.168.1.177:3000/login" };
+var trackedElement = 'h3';
 
 // helper function for creating a full URL
 var addBaseUrl = function(url) {
@@ -52,12 +55,14 @@ var addBaseUrl = function(url) {
   // return baseUrl + url;
 };
 
-var Page = function(url, links, title) {
+var Page = function(url, links, title, tracked) {
   this.url = url;
   this.links = links;
   this.title = title;
+  this.tracked = { element: "", content: ""};
 };
 
+var firstRun = true;
 var visitedLinks = [];
 var urlToPage = {}; // keys are URLs, values are Page objects
 var toCrawl = [];
@@ -69,16 +74,32 @@ var request = request.defaults({jar: cookieJar});
 
 // develop input for pageLink search:
 
+// check initial state vs current state
 
+var changeDetect = function(urlObj, body, tag) {
+  var url = urlObj.uri;
+
+  $ = cheerio.load(body);
+
+  var currTrackedItem = $("'" + tag + "'").text();
+  console.log('currtrackedItem: ', currtrackedItem);
+
+  if(currTrackedItem !== initTrackedItem) {
+    console.log('The item changed bitch!');
+  }
+};
 
 var getAndCrawlLink = function(urlObj, done) {
+  if(firstRun) {
+    firstRun = false;
+  }
 
   var url = urlObj.uri;
 
   console.log("Crawling URL: ", url);
 
   var linksToCrawl = [];
-  var title;
+  var title, trackedContent, trackedElement;
   var pageHtml = request(urlObj, function(err, response, body) {
     // var linksToCrawl = [];
     console.log('In request function...');
@@ -94,6 +115,9 @@ var getAndCrawlLink = function(urlObj, done) {
     var pageLinks = $("a"); // get all the links on your page to wiki pages
     // console.log('pageLinks ', pageLinks);
     title = $('title').text();
+
+    trackedElement = 'h3';
+    trackedContent = $(trackedElement).text();
     // console.log('TITLE ', title);
     // debugger;
 
@@ -110,7 +134,7 @@ var getAndCrawlLink = function(urlObj, done) {
       fullUrl = addBaseUrl(href);
 
       linksToCrawl.push(fullUrl);
-      console.log('Length of linksToCrawl as finding matching links for stated link: ', linksToCrawl.length, href);
+      // console.log('Length of linksToCrawl as finding matching links for stated link: ', linksToCrawl.length, href);
       // console.log(index, " ", href);
       console.log('linksToCrawl ', linksToCrawl);
       console.log('Next URL to validate if not visited ', fullUrl);
@@ -122,20 +146,40 @@ var getAndCrawlLink = function(urlObj, done) {
       }
     });
 
-    var pageObj = new Page(url, linksToCrawl, title);
-    // console.log('links ', links);
+    var tracked = { "element": trackedElement, "content": trackedContent };
+    // var pageObj = new Page(url, linksToCrawl, title, tracked);
+
+    var pageObj;
+
+    if(firstRun) {
+      pageObj = models.Page.create({ "url": url, "links": linksToCrawl, "title": title, "tracked": tracked }, function(err, data) {
+        if(err) {
+          console.log(err);
+        }
+
+        console.log('Created in DB! ', data);
+      });
+    } else {
+      pageObj = models.Page.update({ "url": url, "links": linksToCrawl, "title": title, "tracked": tracked }, function(err, data) {
+        if(err) {
+          console.log(err);
+        }
+
+        console.log('Created in DB! ', data);
+      });
+    }
+
     // var pageObj = new Page(url, links);
     urlToPage[url] = pageObj;
     visitedLinks.push(url); // link var in getAndCrawlLink
     // console.log('visitedLinks ', visitedLinks);
     console.log('urlToPage ', urlToPage);
-    console.log('Length of linksToCrawl as done crawling one link: ', linksToCrawl.length, pageObj.url);
+    // console.log('Length of linksToCrawl as done crawling one link: ', linksToCrawl.length, pageObj.url);
     done(); // notify workerQueue that we're done
 
   });
 };
 
-// getAndCrawlLink(baseUrlObj);
 
 // Crawler Worker
 var crawlWorker = function(urlObj, done) {
@@ -194,11 +238,12 @@ async.series([
   function(callback) {
     workerQueue.push(baseUrlObj);
     workerQueue.drain = function() {
+      console.log('CRAWL DONE');
       // don't boot up the express server until we're finished crawling
       callback(null);
     };
   }
-  // },
+  // ,
   // function(callback) {
   //   // boot the server
   //   http.createServer(app).listen(app.get('port'), function(){
