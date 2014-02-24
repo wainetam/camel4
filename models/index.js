@@ -3,24 +3,65 @@ mongoose.connect('mongodb://localhost/camel4');
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error: '));
 
-var Page;
+var Page, Hist;
 var Schema = mongoose.Schema;
+
+// var pageSchema = new Schema({
+//   url: String,
+//   title: String,
+//   tracked: {
+//     domElement: String,
+//     content: String
+//   },
+//   date: {
+//     type: Date,
+//     default: Date.now
+//   },
+//   links: Array
+// });
 
 var pageSchema = new Schema({
   url: String,
   title: String,
-  tracked: {
-    element: String,
+  currentState: {
+    domElement: String,
     content: String
   },
-  date: {
-    type: Date,
-    default: Date.now
-  },
-  links: Array
-
+    created_at: {
+      type: Date,
+      default: Date.now
+  }, changes: [{
+      content: String,
+      domElement: String,
+      updated_at: {
+        type: Date,
+        default: Date.now
+      }
+  }]
+  // created_date: {
+  //   type: Date,
+  //   default: Date.now
+  // }
+  // links: Array
 });
 
-Page = mongoose.model('Page', pageSchema);
+var histSchema = new Schema({
+  _pageId: Schema.Types.ObjectId,
+  tracked: {
+    domElement: String,
+    content: String,
+  },
+  changes: [{
+      content: String,
+      updated_at: {
+        type: Date,
+        default: Date.now
+      }
+  }]
+});
 
-module.exports = {"Page": Page};
+
+Page = mongoose.model('Page', pageSchema);
+Hist = mongoose.model('Hist', histSchema);
+
+module.exports = {"Page": Page, "Hist": Hist};

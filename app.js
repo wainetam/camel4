@@ -45,8 +45,8 @@ http.createServer(app).listen(app.get('port'), function(){
 
 // var homeUrlObj = { uri: "http://careerosity.com" };
 // var baseUrlObj = { uri: "http://careerosity.com/questions" };
-var baseUrlObj = { uri: "http://192.168.1.177:3000" };
-var loginUrlObj = { uri: "http://192.168.1.177:3000/login" };
+var baseUrlObj = { uri: "http://192.168.1.174:3000/wiki/53038d9e4c5bd73d293062e3" };
+// var loginUrlObj = { uri: "http://192.168.1.177:3000/login" };
 var trackedElement = 'h3';
 
 // helper function for creating a full URL
@@ -59,10 +59,9 @@ var Page = function(url, links, title, tracked) {
   this.url = url;
   this.links = links;
   this.title = title;
-  this.tracked = { element: "", content: ""};
+  this.tracked = { domElement: "", content: ""};
 };
 
-var firstRun = true;
 var visitedLinks = [];
 var urlToPage = {}; // keys are URLs, values are Page objects
 var toCrawl = [];
@@ -89,17 +88,17 @@ var changeDetect = function(urlObj, body, tag) {
   }
 };
 
+// var firstRun = true;
+
 var getAndCrawlLink = function(urlObj, done) {
-  if(firstRun) {
-    firstRun = false;
-  }
+  // console.log('FIRSTRUN?', firstRun);
 
   var url = urlObj.uri;
 
   console.log("Crawling URL: ", url);
 
   var linksToCrawl = [];
-  var title, trackedContent, trackedElement;
+  var title;
   var pageHtml = request(urlObj, function(err, response, body) {
     // var linksToCrawl = [];
     console.log('In request function...');
@@ -116,8 +115,7 @@ var getAndCrawlLink = function(urlObj, done) {
     // console.log('pageLinks ', pageLinks);
     title = $('title').text();
 
-    trackedElement = 'h3';
-    trackedContent = $(trackedElement).text();
+
     // console.log('TITLE ', title);
     // debugger;
 
@@ -140,34 +138,88 @@ var getAndCrawlLink = function(urlObj, done) {
       console.log('Next URL to validate if not visited ', fullUrl);
       console.log('Current visitedLinks ', visitedLinks);
 
-      if(visitedLinks.indexOf(fullUrl) === -1) {
-        console.log('In recursive condition...next URL to potentially crawl: ', fullUrl);
-        workerQueue.push({uri: fullUrl});
-      }
+      // if(visitedLinks.indexOf(fullUrl) === -1) {
+      //   console.log('In recursive condition...next URL to potentially crawl: ', fullUrl);
+      //   workerQueue.push({uri: fullUrl});
+      // }
     });
 
-    var tracked = { "element": trackedElement, "content": trackedContent };
+
     // var pageObj = new Page(url, linksToCrawl, title, tracked);
 
-    var pageObj;
+    var pageObj, histObj;
 
-    if(firstRun) {
-      pageObj = models.Page.create({ "url": url, "links": linksToCrawl, "title": title, "tracked": tracked }, function(err, data) {
-        if(err) {
+    // models.Page.update( {"url": url}, {$set: { "title": title, "tracked": tracked } }, {upsert: true});
+    // });
+
+// http:stackoverflow.com/questions/4185105/ways-to-implement-data-versioning-in-mongodb
+
+    models.Page.findOne({ "url": url }, function(err, data) {
+      var trackedElement = 'h3';
+      var trackedContent = $(trackedElement).text();
+      var currentState = { "domElement": trackedElement, "content": trackedContent };
+
+      if(err) {
           console.log(err);
+      }
+
+      if(data) { // URL already in database
+        // console.log('DATA ', data);
+        if(data.currentState.domElement === trackedElement && data.currentState.content !== trackedContent) {
+          console.log('THE PRICE CHANGED!');
+          models.Page.update( { "url": url} , {$set: {"currentState": currentState}, $push: {"changes" : { "content": trackedContent, "domElement": trackedElement }}}, {upsert: true}, function(err, data) {
+            console.log('Added to history! ', data);
+          });
         }
 
-        console.log('Created in DB! ', data);
-      });
-    } else {
-      pageObj = models.Page.update({ "url": url, "links": linksToCrawl, "title": title, "tracked": tracked }, function(err, data) {
-        if(err) {
-          console.log(err);
+        else if(data.currentState.domElement === trackedElement && data.currentState.content === trackedContent) { // no change in page
+          console.log('NO CHANGE TO PAGE!');
         }
 
-        console.log('Created in DB! ', data);
-      });
-    }
+        else {
+          console.log('The DOM element we were tracking changed');
+          models.Page.update( { "url": url} , {$push: {"changes" : { "content": trackedContent, "domElement": trackedElement }}}, {upsert: true}, function(err, data) {
+            console.log('Added to history! ', data);
+          });
+        }
+      }
+
+        // models.Page.update({ "url": url, "title": title, "currentState": currentState },  {upsert: true}, function(err, data) {
+        //   console.log('Record exists! ', url);
+
+        //   // console.log("DATA", data);
+        //   var id = data._id; // id of object
+        //   console.log("ID", id);
+
+        //   // models.Hist.create({ "url": url} );
+
+        //   models.Hist.update( { "url": url} , {$push: {"changes" : { "content": trackedContent }}}, {upsert: true}, function(err, data) {
+
+        //   // models.Hist.update( { "url": url} , {$set: { "tracked" : tracked}, $push: {"changes" : { "content": trackedContent }}}, {upsert: true}, function(err, data) {
+        //   // models.Hist.update( { "url": url} , {$set: { "tracked" : tracked, "changes" : { "content": trackedContent, "date": new Date()} } }, {upsert: true}, function(err, data) {
+        //       console.log('Added to history! ', data);
+        //   });
+        // });
+      else { // new URL added to database
+        // models.Page.create({ "url": url, "links": linksToCrawl, "title": title, "tracked": tracked }, function(err, data) {
+          models.Page.create({ "url": url, "title": title, "currentState": currentState }, function(err, data) {
+          console.log('New URL object created in DB! ', data);
+
+          // console.log("DATA", data);
+          // var id = data._id; // id of object
+          // console.log("ID", id);
+
+          // models.Hist.create({ "url": url} );
+
+          // models.Hist.update( { "url": url} , {$push: {"changes" : { "content": trackedContent }}}, {upsert: true}, function(err, data) {
+
+          // models.Hist.update( { "url": url} , {$set: { "tracked" : tracked}, $push: {"changes" : { "content": trackedContent }}}, {upsert: true}, function(err, data) {
+          // models.Hist.update( {"url": url} , {$set: { "tracked" : tracked, "changes" : { "content": trackedContent, "date" : new Date()} } }, {upsert: true}, function(err, data) {
+              // console.log('Versioning started ', data);
+          // });
+        });
+      }
+    });
 
     // var pageObj = new Page(url, links);
     urlToPage[url] = pageObj;
@@ -225,12 +277,30 @@ async.series([
   //     callback(null);
   //  };
   // },
+  // function(callback) {
+  //   // crawl a wiki stack
+  //   console.log("Trying to login via POST...");
+  //   // workerQueue.push({url: baseUrl});
+  //   workerQueue.push({ uri: loginUrlObj.uri, method: 'POST', form: {username: 'waine', password: 'waine'} });
+  //   workerQueue.drain = function() {
+  //     // don't boot up the express server until we're finished crawling
+  //     callback(null);
+  //   };
+  // },
   function(callback) {
-    // crawl a wiki stack
-    console.log("Trying to login via POST...");
-    // workerQueue.push({url: baseUrl});
-    workerQueue.push({ uri: loginUrlObj.uri, method: 'POST', form: {username: 'waine', password: 'waine'} });
+    workerQueue.push(baseUrlObj);
     workerQueue.drain = function() {
+      console.log('FIRST CRAWL DONE');
+      // don't boot up the express server until we're finished crawling
+      callback(null);
+    };
+  },
+  function(callback) {
+    setTimeout(function() {
+      callback(null);
+    }, 1000);
+    workerQueue.drain = function() {
+      console.log('DELAY COMPLETED');
       // don't boot up the express server until we're finished crawling
       callback(null);
     };
@@ -238,7 +308,25 @@ async.series([
   function(callback) {
     workerQueue.push(baseUrlObj);
     workerQueue.drain = function() {
-      console.log('CRAWL DONE');
+      console.log('SECOND CRAWL DONE');
+      // don't boot up the express server until we're finished crawling
+      callback(null);
+    };
+  },
+  function(callback) {
+    setTimeout(function() {
+      callback(null);
+    }, 1000);
+    workerQueue.drain = function() {
+      console.log('DELAY COMPLETED');
+      // don't boot up the express server until we're finished crawling
+      callback(null);
+    };
+  },
+  function(callback) {
+    workerQueue.push(baseUrlObj);
+    workerQueue.drain = function() {
+      console.log('THIRD CRAWL DONE');
       // don't boot up the express server until we're finished crawling
       callback(null);
     };
