@@ -10,6 +10,10 @@ var cheerio = require('cheerio'),
     http = require('http');
     models = require('./models');
 
+// Nodemailer
+
+var nodemailer = require("nodemailer");
+
 var swig = require('swig'); // added to access Swig
 
 var routes = require('./routes');
@@ -43,9 +47,57 @@ http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
 });
 
+
+// Nodemailer
+
+var smtpTransport = nodemailer.createTransport("SMTP",{
+    service: "Gmail",
+    auth: {
+        user: "jollytracker@gmail.com",
+        pass: "jollytracker14"
+    }
+});
+
+var mailOptions = {
+    from: "Jolly Tracker ✔ <jollytracker@gmail.com>", // sender address
+    to: "wainetam@gmail.com", // list of receivers
+    subject: "Tracked Content has Changed! ✔", // Subject line
+    text: "Hello world ✔", // plaintext body
+    html: "<b>Hello world ✔</b>" // html body
+};
+
+var sendMail = function() {
+  smtpTransport.sendMail(mailOptions, function(error, response){
+    if(error){
+        console.log(error);
+    }else{
+        console.log("Message sent: " + response.message);
+    }
+    // if you don't want to use this transport object anymore, uncomment following line
+    //smtpTransport.close(); // shut down the connection pool, no more messages
+  });
+};
+
+// end Nodemailer
+
+var dbLinksToCrawl = [];
+
+// pull URLs from DB to crawl
+var compileToCrawl = function() {
+  models.Page.find({}, function(err, pages) { // pages is an array
+    if(err) {
+      console.log(err);
+    }
+
+    pages.forEach(function(page) {
+      dbLinksToCrawl = push(page.url);
+    });
+  });
+};
+
 // var homeUrlObj = { uri: "http://careerosity.com" };
 // var baseUrlObj = { uri: "http://careerosity.com/questions" };
-var baseUrlObj = { uri: "http://192.168.1.22:3000/wiki/53038d9e4c5bd73d293062e3" };
+var baseUrlObj = { uri: "http://192.168.1.3:3000/wiki/53038d9e4c5bd73d293062e3" };
 // var loginUrlObj = { uri: "http://192.168.1.177:3000/login" };
 var trackedElement = 'h3';
 
@@ -64,7 +116,6 @@ var Page = function(url, links, title, tracked) {
 
 var visitedLinks = [];
 var urlToPage = {}; // keys are URLs, values are Page objects
-var toCrawl = [];
 
 var cookieJar = request.jar();
 
@@ -166,6 +217,7 @@ var getAndCrawlLink = function(urlObj, done) {
         // console.log('DATA ', data);
         if(data.currentState.domElement === trackedElement && data.currentState.content !== trackedContent) {
           console.log('THE PRICE CHANGED!');
+          // sendMail(); //send email to user
           models.Page.update( { "url": url} , {$set: {"currentState": currentState}, $push: {"changes" : { "content": trackedContent, "domElement": trackedElement }}}, {upsert: true}, function(err, data) {
             console.log('Added to history! ', data);
           });
@@ -236,7 +288,7 @@ var crawlWorker = function(urlObj, done) {
   getAndCrawlLink(urlObj, done);
 };
 
-var concurrency = 1;
+var concurrency = 2;
 
 var workerQueue = async.queue(crawlWorker, concurrency);
 
@@ -269,7 +321,6 @@ var postingQueue = async.queue(function(urlObj, done) {
 
 // use async module to guarantee that we crawl before we boot the web server
 
-
 async.series([
   // function(callback) {
   //   workerQueue.drain = function() {
@@ -297,9 +348,9 @@ async.series([
   },
   function(callback) {
     setTimeout(function() {
-      callback(null);
       console.log('DELAY COMPLETED');
-    }, 5000);
+      callback(null);
+    }, 1000);
     workerQueue.drain = function() {
       // don't boot up the express server until we're finished crawling
       callback(null);
@@ -315,9 +366,9 @@ async.series([
   },
   function(callback) {
     setTimeout(function() {
-      callback(null);
       console.log('DELAY COMPLETED');
-    }, 5000);
+      callback(null);
+    }, 1000);
     workerQueue.drain = function() {
       // don't boot up the express server until we're finished crawling
       callback(null);
