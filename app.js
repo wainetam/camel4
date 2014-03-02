@@ -10,14 +10,14 @@ var cheerio = require('cheerio'),
     http = require('http');
     models = require('./models');
 
-    // swig = require('swig');
+var swig = require('swig'); // added to access Swig
 
 var routes = require('./routes');
 var user = require('./routes/user');
-var http = require('http');
 var path = require('path');
 
 var app = express();
+app.engine('html', swig.renderFile);
 
 // all environments
 app.set('port', process.env.PORT || 3333);
@@ -45,7 +45,7 @@ http.createServer(app).listen(app.get('port'), function(){
 
 // var homeUrlObj = { uri: "http://careerosity.com" };
 // var baseUrlObj = { uri: "http://careerosity.com/questions" };
-var baseUrlObj = { uri: "http://192.168.1.174:3000/wiki/53038d9e4c5bd73d293062e3" };
+var baseUrlObj = { uri: "http://192.168.1.22:3000/wiki/53038d9e4c5bd73d293062e3" };
 // var loginUrlObj = { uri: "http://192.168.1.177:3000/login" };
 var trackedElement = 'h3';
 
@@ -69,7 +69,6 @@ var toCrawl = [];
 var cookieJar = request.jar();
 
 var request = request.defaults({jar: cookieJar});
-
 
 // develop input for pageLink search:
 
@@ -225,20 +224,19 @@ var getAndCrawlLink = function(urlObj, done) {
     urlToPage[url] = pageObj;
     visitedLinks.push(url); // link var in getAndCrawlLink
     // console.log('visitedLinks ', visitedLinks);
-    console.log('urlToPage ', urlToPage);
+    // console.log('urlToPage ', urlToPage);
     // console.log('Length of linksToCrawl as done crawling one link: ', linksToCrawl.length, pageObj.url);
     done(); // notify workerQueue that we're done
 
   });
 };
 
-
 // Crawler Worker
 var crawlWorker = function(urlObj, done) {
   getAndCrawlLink(urlObj, done);
 };
 
-var concurrency = 2;
+var concurrency = 1;
 
 var workerQueue = async.queue(crawlWorker, concurrency);
 
@@ -270,6 +268,8 @@ var postingQueue = async.queue(function(urlObj, done) {
 // urlObjArr = [submitPostUrlObj1, submitPostUrlObj2, submitPostUrlObj3, submitPostUrlObj4];
 
 // use async module to guarantee that we crawl before we boot the web server
+
+
 async.series([
   // function(callback) {
   //   workerQueue.drain = function() {
@@ -298,9 +298,9 @@ async.series([
   function(callback) {
     setTimeout(function() {
       callback(null);
-    }, 1000);
-    workerQueue.drain = function() {
       console.log('DELAY COMPLETED');
+    }, 5000);
+    workerQueue.drain = function() {
       // don't boot up the express server until we're finished crawling
       callback(null);
     };
@@ -316,9 +316,9 @@ async.series([
   function(callback) {
     setTimeout(function() {
       callback(null);
-    }, 1000);
-    workerQueue.drain = function() {
       console.log('DELAY COMPLETED');
+    }, 5000);
+    workerQueue.drain = function() {
       // don't boot up the express server until we're finished crawling
       callback(null);
     };
@@ -331,13 +331,4 @@ async.series([
       callback(null);
     };
   }
-  // ,
-  // function(callback) {
-  //   // boot the server
-  //   http.createServer(app).listen(app.get('port'), function(){
-  //     console.log('Express server listening on port ' + app.get('port'));
-  //   });
-  // }
 ]);
-
-
