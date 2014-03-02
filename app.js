@@ -80,18 +80,27 @@ var sendMail = function() {
 
 // end Nodemailer
 
+// pull URLs from DB to crawl
 var dbLinksToCrawl = [];
 
-// pull URLs from DB to crawl
 var compileToCrawl = function() {
+  console.log('in compiletocrawl func');
+
+  var pushToArr = function(pageObj, cb) {
+    dbLinksToCrawl.push(pageObj.url);
+    cb(null);
+  };
+
   models.Page.find({}, function(err, pages) { // pages is an array
     if(err) {
       console.log(err);
     }
-
-    pages.forEach(function(page) {
-      dbLinksToCrawl = push(page.url);
+    async.each(pages, pushToArr, function(err) {
+      if(err) {
+        console.log(err);
+      }
     });
+    // console.log('dbLinks?', dbLinksToCrawl);
   });
 };
 
@@ -381,5 +390,9 @@ async.series([
       // don't boot up the express server until we're finished crawling
       callback(null);
     };
+  },
+  function(callback) {
+    compileToCrawl();
+    callback(null);
   }
 ]);
