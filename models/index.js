@@ -6,20 +6,6 @@ db.on('error', console.error.bind(console, 'connection error: '));
 var Page, Hist;
 var Schema = mongoose.Schema;
 
-// var pageSchema = new Schema({
-//   url: String,
-//   title: String,
-//   tracked: {
-//     domElement: String,
-//     content: String
-//   },
-//   date: {
-//     type: Date,
-//     default: Date.now
-//   },
-//   links: Array
-// });
-
 var pageSchema = new Schema({
   url: String,
   title: String,
@@ -45,6 +31,10 @@ var pageSchema = new Schema({
   // links: Array
 });
 
+pageSchema.virtual('uri').get(function() {
+  return this.url;
+});
+
 var histSchema = new Schema({
   _pageId: Schema.Types.ObjectId,
   tracked: {
@@ -59,7 +49,6 @@ var histSchema = new Schema({
       }
   }]
 });
-
 
 Page = mongoose.model('Page', pageSchema);
 Hist = mongoose.model('Hist', histSchema);

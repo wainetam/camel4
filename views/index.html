@@ -8,12 +8,31 @@
   </head>
   {% raw %}
   <body ng-controller="SubmitCtrl">
-      <h3>Enter WikiStack URL:</h3>
-      <form role="form" name="urlSubmit" method="POST">
-        <input type="text" class="form-control" ng-model="urlObj.url">
-        <p>{{urlObj.url}}</p>
-        <input on-submit type="submit" class="btn btn-default" value="Submit">
-      </form>
+    <h3> Track URL and DOM element:</h3>
+    <form novalidate role="form" name="inputForm" class="form" method="POST">
+      <div class="form group">
+        <label for="urlSubmit">Enter URL to track:</label>
+        <input required ng-pattern="/^http:\/\/\S*/" type="text" id="urlSubmit" name="url" class="form-control" ng-model="urlObj.url">
+        <!-- <p>{{urlObj.url}}</p> -->
+        <div class="error-message" ng-show="inputForm.url.$error.required">
+          Please include http:// in your URL submission
+        </div>
+        <br />
+      </div>
+      <div class="form group">
+        <label for="domSubmit">DOM element in URL to track:</label>
+        <input required type="text" class="form-control" name="domElement" id="domSubmit" ng-model="domElement">
+        <div class="error-message" ng-show="inputForm.domElement.$error.required">
+          DOM element is required
+        </div>
+      </div>
+      <br />
+      <input on-submit type="submit" class="btn btn-default" value="Submit">
+    </form>
+    <div class="dashboard">
+
+    </div>
+
     <script src="/javascripts/app.js"></script>
     <script src="/javascripts/controllers.js"></script>
     <script src="/javascripts/directives.js"></script>

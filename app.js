@@ -7,7 +7,7 @@ var cheerio = require('cheerio'),
     request = require('request'),
     express = require('express'),
     async = require('async'),
-    http = require('http');
+    http = require('http'),
     models = require('./models');
 
 // Nodemailer
@@ -42,11 +42,12 @@ if ('development' == app.get('env')) {
 
 app.get('/', routes.index);
 app.get('/users', user.list);
+app.post('/submit', routes.index);
+
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
 });
-
 
 // Nodemailer
 
@@ -81,38 +82,44 @@ var sendMail = function() {
 // end Nodemailer
 
 // pull URLs from DB to crawl
-var dbLinksToCrawl = [];
+var dbPagesToCrawl;
 
-var compileToCrawl = function() {
-  console.log('in compiletocrawl func');
+var compileToCrawl = function(cb) { // return pages from DB
+  console.log("in compiletocrawl func");
 
-  var pushToArr = function(pageObj, cb) {
-    dbLinksToCrawl.push(pageObj.url);
-    cb(null);
-  };
-
+  // var pushToArr = function(pageObj, cb) {
+  //   dbPagesToCrawl.push(pageObj);
+  //   cb(null);
+  // };
   models.Page.find({}, function(err, pages) { // pages is an array
+
     if(err) {
       console.log(err);
     }
-    async.each(pages, pushToArr, function(err) {
-      if(err) {
-        console.log(err);
-      }
-    });
+    console.log("dbPagesToCrawl pages ", pages);
+    dbPagesToCrawl = pages;
+
+    // async.each(pages, pushToArr, function(err) {
+    //   if(err) {
+    //     console.log(err);
+    //   }
+    // });
     // console.log('dbLinks?', dbLinksToCrawl);
   });
+  // dbPagesToCrawl = pages;
+  console.log("dbPagesToCrawl before callback in compile func ", dbPagesToCrawl);
+  cb();
 };
 
 // var homeUrlObj = { uri: "http://careerosity.com" };
 // var baseUrlObj = { uri: "http://careerosity.com/questions" };
-var baseUrlObj = { uri: "http://192.168.1.3:3000/wiki/53038d9e4c5bd73d293062e3" };
+var baseUrlObj = { url: "http://192.168.1.174:3000/wiki/53038d9e4c5bd73d293062e3" };
 // var loginUrlObj = { uri: "http://192.168.1.177:3000/login" };
 var trackedElement = 'h3';
 
 // helper function for creating a full URL
 var addBaseUrl = function(url) {
-  return baseUrlObj.uri + url;
+  return baseUrlObj.url + url;
   // return baseUrl + url;
 };
 
@@ -127,45 +134,56 @@ var visitedLinks = [];
 var urlToPage = {}; // keys are URLs, values are Page objects
 
 var cookieJar = request.jar();
-
 var request = request.defaults({jar: cookieJar});
 
 // develop input for pageLink search:
 
 // check initial state vs current state
 
-var changeDetect = function(urlObj, body, tag) {
-  var url = urlObj.uri;
+// var changeDetect = function(urlObj, body, tag) {
+//   var url = urlObj.url;
 
-  $ = cheerio.load(body);
+//   $ = cheerio.load(body);
 
-  var currTrackedItem = $("'" + tag + "'").text();
-  console.log('currtrackedItem: ', currtrackedItem);
+//   var currTrackedItem = $("'" + tag + "'").text();
+//   console.log('currtrackedItem: ', currtrackedItem);
 
-  if(currTrackedItem !== initTrackedItem) {
-    console.log('The item changed bitch!');
-  }
-};
+//   if(currTrackedItem !== initTrackedItem) {
+//     console.log('The item changed bitch!');
+//   }
+// };
 
 // var firstRun = true;
 
 var getAndCrawlLink = function(urlObj, done) {
   // console.log('FIRSTRUN?', firstRun);
+  // debugger;
+  var url = urlObj.url;
 
-  var url = urlObj.uri;
-
-  console.log("Crawling URL: ", url);
+  // console.log("Crawling URL: ", url);
+  // if(url === 'http://192.168.1.174:3000/wiki/53038d9e4c5bd73d293062e3') {
+  //   console.log("YES");
+  // } else {
+  //   console.log("NO!");
+  // }
 
   var linksToCrawl = [];
   var title;
-  var pageHtml = request(urlObj, function(err, response, body) {
+  var pageHtml = request(urlObj, function(err, response, body) { // request takes an object w parameters: method, uri
     // var linksToCrawl = [];
+    console.log('urlObj as input to request func: ', urlObj);
     console.log('In request function...');
-    console.log('Capturing cookie: ', cookieJar.getCookieString(response.request.uri));
+    // console.log('response before Capturing cookie ', response);
+    // console.log('body before Capturing cookie ', body);
 
+    // KILLED COOKIEJAR
+    // console.log("URL OBJ" + urlObj);
+    //   console.log("ERR: " + err);
     if(err && response.statusCode !== 200) {
       console.log('Request error.');
     }
+    console.log('Capturing cookie: ', cookieJar.getCookieString(response.request.uri));
+    // END COOKIEJAR
 
     $ = cheerio.load(body);
 
@@ -215,6 +233,7 @@ var getAndCrawlLink = function(urlObj, done) {
 
     models.Page.findOne({ "url": url }, function(err, data) {
       var trackedElement = 'h3';
+      // var trackedElement = data.currentState.domElement;
       var trackedContent = $(trackedElement).text();
       var currentState = { "domElement": trackedElement, "content": trackedContent };
 
@@ -225,7 +244,7 @@ var getAndCrawlLink = function(urlObj, done) {
       if(data) { // URL already in database
         // console.log('DATA ', data);
         if(data.currentState.domElement === trackedElement && data.currentState.content !== trackedContent) {
-          console.log('THE PRICE CHANGED!');
+          console.log('CONTENT CHANGED at: ', url);
           // sendMail(); //send email to user
           models.Page.update( { "url": url} , {$set: {"currentState": currentState}, $push: {"changes" : { "content": trackedContent, "domElement": trackedElement }}}, {upsert: true}, function(err, data) {
             console.log('Added to history! ', data);
@@ -233,7 +252,7 @@ var getAndCrawlLink = function(urlObj, done) {
         }
 
         else if(data.currentState.domElement === trackedElement && data.currentState.content === trackedContent) { // no change in page
-          console.log('NO CHANGE TO PAGE!');
+          console.log('NO CHANGE TO: ', url);
         }
 
         else {
@@ -304,7 +323,7 @@ var workerQueue = async.queue(crawlWorker, concurrency);
 var postBot = function(urlObj, done) {
   request(urlObj, function(err, response, body) {
     console.log('in post function...');
-    console.log('Capturing cookie: ', cookieJar.getCookieString(response.request.uri));
+    console.log('Capturing cookie: ', cookieJar.getCookieString(response.request.url));
 
   if(err && response.statusCode !== 200) {
       console.log('Request error.');
@@ -330,69 +349,74 @@ var postingQueue = async.queue(function(urlObj, done) {
 
 // use async module to guarantee that we crawl before we boot the web server
 
-async.series([
-  // function(callback) {
-  //   workerQueue.drain = function() {
-  //     // don't boot up the express server until we're finished crawling (no events in queue)
-  //     callback(null);
-  //  };
-  // },
-  // function(callback) {
-  //   // crawl a wiki stack
-  //   console.log("Trying to login via POST...");
-  //   // workerQueue.push({url: baseUrl});
-  //   workerQueue.push({ uri: loginUrlObj.uri, method: 'POST', form: {username: 'waine', password: 'waine'} });
-  //   workerQueue.drain = function() {
-  //     // don't boot up the express server until we're finished crawling
-  //     callback(null);
-  //   };
-  // },
-  function(callback) {
-    workerQueue.push(baseUrlObj);
-    workerQueue.drain = function() {
-      console.log('FIRST CRAWL DONE');
-      // don't boot up the express server until we're finished crawling
-      callback(null);
-    };
-  },
-  function(callback) {
-    setTimeout(function() {
-      console.log('DELAY COMPLETED');
-      callback(null);
-    }, 1000);
-    workerQueue.drain = function() {
-      // don't boot up the express server until we're finished crawling
-      callback(null);
-    };
-  },
-  function(callback) {
-    workerQueue.push(baseUrlObj);
-    workerQueue.drain = function() {
-      console.log('SECOND CRAWL DONE');
-      // don't boot up the express server until we're finished crawling
-      callback(null);
-    };
-  },
-  function(callback) {
-    setTimeout(function() {
-      console.log('DELAY COMPLETED');
-      callback(null);
-    }, 1000);
-    workerQueue.drain = function() {
-      // don't boot up the express server until we're finished crawling
-      callback(null);
-    };
-  },
-  function(callback) {
-    workerQueue.push(baseUrlObj);
-    workerQueue.drain = function() {
-      console.log('THIRD CRAWL DONE');
-      // don't boot up the express server until we're finished crawling
-      callback(null);
-    };
-  },
-  function(callback) {
-    compileToCrawl();
-    callback(null);
-  }
-]);
+
+var queuePush = function(pageObj, cb) {
+  var pageObjJSON = pageObj.toJSON(); // Request no like mongoose document; need to convert to JSON
+  workerQueue.push(pageObjJSON);
+  console.log('pageObj pushed to workerQueue ', pageObjJSON);
+  cb(null);
+};
+
+// var fillQueue = function() {
+//   compileToCrawl(function() {
+//     async.each(dbPagesToCrawl, queuePush, function(err) {
+//       if(err) {
+//         console.log(err);
+//       }
+//       console.log('all workers pushed!');
+//       // push each url into Queue
+//     });
+//   });
+// };
+
+var appStart = function() {
+  async.series([
+    function(callback) {
+      workerQueue.push(baseUrlObj);
+      workerQueue.drain = function() {
+        console.log('FIRST CRAWL DONE');
+        // don't boot up the express server until we're finished crawling
+        callback(null);
+      };
+    },
+    function(callback) {
+      compileToCrawl(callback);
+      console.log('dbPages to Crawl in Async Series ', dbPagesToCrawl);
+      workerQueue.drain = function() {
+        console.log('FIRST CRAWL DONE');
+        // don't boot up the express server until we're finished crawling
+        callback(null);
+      };
+    },
+    function(callback) {
+      setTimeout(function() {
+        console.log('DELAY COMPLETED');
+        callback(null);
+      }, 2000);
+    },
+    function(callback) {
+      console.log("dbPagesToCrawl before Push to WQ: ", dbPagesToCrawl);
+      async.each(dbPagesToCrawl, queuePush, function(err) {
+        if(err) {
+          console.log(err);
+        }
+        console.log('all workers pushed!');
+        // push each url into Queue
+        callback(null);
+      });
+    },
+    function(callback) {
+      workerQueue.drain = function() {
+        setTimeout(function() {
+          console.log('all items have been processed');
+          console.log('*****************************');
+          appStart();
+        }, 10000);
+        // console.log('RESTARTING crawl...');
+        // });
+      };
+    }
+  ]);
+};
+
+appStart();

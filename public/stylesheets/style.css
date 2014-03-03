@@ -6,3 +6,9 @@ body {
 a {
   color: #00B7FF;
 }
+
+
+/*angular CSS*/
+input.ng-invalid {
+  background-color: #FFCFCF;
+}
