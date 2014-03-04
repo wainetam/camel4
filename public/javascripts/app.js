@@ -4,7 +4,7 @@ angular.module('myApp')
   .config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
     $routeProvider
       .when('/', {
-        // templateUrl: '../views/index.html',
+        templateUrl: 'partials/index',
         controller:'SubmitCtrl'
       })
       .otherwise({
@@ -23,3 +23,8 @@ angular.module('myApp')
 //       redirectTo: '/'
 //     });
 // });
+
+// when('/', {
+//   templateUrl: 'partials/index',
+//   controller: IndexCtrl
+// }).

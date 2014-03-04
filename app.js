@@ -43,7 +43,7 @@ if ('development' == app.get('env')) {
 
 app.get('/', routes.index);
 app.post('/submit', routes.submit);
-
+app.get('/partials/:name', routes.partials);
 app.get('/users', user.list);
 
 

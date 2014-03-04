@@ -23,6 +23,7 @@ angular.module('myApp.controllers')
       }
     });
 
+  }])
+  .controller('DashCtrl', ['$scope', '$http', '$location', function($scope, $http, $location) {
+
   }]);
-
-
