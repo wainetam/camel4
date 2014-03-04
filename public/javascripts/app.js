@@ -10,7 +10,7 @@ angular.module('myApp')
       .otherwise({
         redirectTo: '/'
       });
-    $locationProvider.html5Mode(true);
+    // $locationProvider.html5Mode(true);
   }]);
 
 // angular.module('myApp').config(function ($routeProvider) {

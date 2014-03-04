@@ -8,6 +8,7 @@ var cheerio = require('cheerio'),
     express = require('express'),
     async = require('async'),
     http = require('http'),
+    Q = require('q'),
     models = require('./models');
 
 // Nodemailer
@@ -41,8 +42,9 @@ if ('development' == app.get('env')) {
 }
 
 app.get('/', routes.index);
-app.get('/users', user.list);
 app.post('/submit', routes.submit);
+
+app.get('/users', user.list);
 
 
 http.createServer(app).listen(app.get('port'), function(){
@@ -177,39 +179,26 @@ var getAndCrawlLink = function(urlObj, done) {
 
     $ = cheerio.load(body);
 
-    // var pageLinks = $(".qabubble .question"); // get all the links on your page to wiki pages
-    var pageLinks = $("a"); // get all the links on your page to wiki pages
-    // console.log('pageLinks ', pageLinks);
-    title = $('title').text();
+    // var pageLinks = $("a"); // get all the links on your page to wiki pages
+    // title = $('title').text();
 
+    // var matchedLinks = pageLinks.filter(function(index, link) {
+    //   if($(link).attr('href').match(/^\/wiki/)) {
+    //   // if($(link).attr('href').match(/^\/questions/)) {
+    //     return true;
+    //   }
+    // });
 
-    // console.log('TITLE ', title);
-    // debugger;
+    // matchedLinks.map(function(index, link) {
+    //   var href = $(link).attr('href');
 
-    var matchedLinks = pageLinks.filter(function(index, link) {
-      if($(link).attr('href').match(/^\/wiki/)) {
-      // if($(link).attr('href').match(/^\/questions/)) {
-        return true;
-      }
-    });
+    //   fullUrl = addBaseUrl(href);
 
-    matchedLinks.map(function(index, link) {
-      var href = $(link).attr('href');
-
-      fullUrl = addBaseUrl(href);
-
-      linksToCrawl.push(fullUrl);
-      // console.log('Length of linksToCrawl as finding matching links for stated link: ', linksToCrawl.length, href);
-      // console.log(index, " ", href);
-      console.log('linksToCrawl ', linksToCrawl);
-      console.log('Next URL to validate if not visited ', fullUrl);
-      console.log('Current visitedLinks ', visitedLinks);
-
-      // if(visitedLinks.indexOf(fullUrl) === -1) {
-      //   console.log('In recursive condition...next URL to potentially crawl: ', fullUrl);
-      //   workerQueue.push({uri: fullUrl});
-      // }
-    });
+    //   linksToCrawl.push(fullUrl);
+    //   console.log('linksToCrawl ', linksToCrawl);
+    //   console.log('Next URL to validate if not visited ', fullUrl);
+    //   console.log('Current visitedLinks ', visitedLinks);
+    // });
 
 
     // var pageObj = new Page(url, linksToCrawl, title, tracked);

@@ -8,8 +8,11 @@ angular.module('myApp.controllers')
     };
 
     $scope.submitUrlAndDom = function() {
+      console.log('in submit func with form var ', $scope.form);
       $http.post('/submit', $scope.form).success(function(data) {
         $location.path('/');
+        $scope.error = data.urlError;
+        console.log(data);
       });
     };
 

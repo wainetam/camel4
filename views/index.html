@@ -17,13 +17,16 @@
     <div class="container">
       <h3> Track URL and DOM element:</h3>
 
-      <form novalidate role="form" name="inputForm" class="form" method="POST">
+      <form novalidate role="form" name="inputForm" class="form" ng-submit="submitUrlAndDom()" method="POST">
         <div class="form group">
           <label for="urlSubmit">Enter URL to track:</label>
           <input required ng-pattern="/^http:\/\/\S*/" type="text" id="urlSubmit" name="url" class="form-control" ng-model="form.url">
           <!-- <p>{{form.url}}</p> -->
           <div class="error-message" ng-show="inputForm.url.$error.required">
-            Please include http:// in your URL submission
+            Invalid URL. Please make sure to include http://
+          </div>
+          <div class="error-message" ng-model="error">
+            {{error}}
           </div>
           <br />
         </div>
@@ -35,7 +38,8 @@
           </div>
         </div>
         <br />
-        <button ng-click="submitUrlAndDom()" class="btn btn-default" value="Submit">Submit</button>
+        <!-- <button ng-click="submitUrlAndDom()" class="btn btn-default" value="Submit">Submit</button> -->
+        <input type="submit" id="submit" class="btn btn-default" value="Submit" />
       </form>
 
       <div class="dashboard">
