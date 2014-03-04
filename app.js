@@ -42,7 +42,7 @@ if ('development' == app.get('env')) {
 
 app.get('/', routes.index);
 app.get('/users', user.list);
-app.post('/submit', routes.index);
+app.post('/submit', routes.submit);
 
 
 http.createServer(app).listen(app.get('port'), function(){
@@ -85,12 +85,8 @@ var sendMail = function() {
 var dbPagesToCrawl;
 
 var compileToCrawl = function(cb) { // return pages from DB
-  console.log("in compiletocrawl func");
+  console.log("in compileToCrawl func");
 
-  // var pushToArr = function(pageObj, cb) {
-  //   dbPagesToCrawl.push(pageObj);
-  //   cb(null);
-  // };
   models.Page.find({}, function(err, pages) { // pages is an array
 
     if(err) {
@@ -99,21 +95,14 @@ var compileToCrawl = function(cb) { // return pages from DB
     console.log("dbPagesToCrawl pages ", pages);
     dbPagesToCrawl = pages;
 
-    // async.each(pages, pushToArr, function(err) {
-    //   if(err) {
-    //     console.log(err);
-    //   }
-    // });
-    // console.log('dbLinks?', dbLinksToCrawl);
+    cb(null);
   });
-  // dbPagesToCrawl = pages;
-  console.log("dbPagesToCrawl before callback in compile func ", dbPagesToCrawl);
-  cb();
+  // console.log("dbPagesToCrawl before callback in compile func ", dbPagesToCrawl);
 };
 
 // var homeUrlObj = { uri: "http://careerosity.com" };
 // var baseUrlObj = { uri: "http://careerosity.com/questions" };
-var baseUrlObj = { url: "http://192.168.1.174:3000/wiki/53038d9e4c5bd73d293062e3" };
+var baseUrlObj = { url: "http://192.168.1.174:3000/wiki/53038d9e4c5bd73d293062e3", domElement: "h3" };
 // var loginUrlObj = { uri: "http://192.168.1.177:3000/login" };
 var trackedElement = 'h3';
 
@@ -159,6 +148,7 @@ var getAndCrawlLink = function(urlObj, done) {
   // console.log('FIRSTRUN?', firstRun);
   // debugger;
   var url = urlObj.url;
+  var domElement = urlObj.domElement;
 
   // console.log("Crawling URL: ", url);
   // if(url === 'http://192.168.1.174:3000/wiki/53038d9e4c5bd73d293062e3') {
@@ -231,11 +221,13 @@ var getAndCrawlLink = function(urlObj, done) {
 
 // http:stackoverflow.com/questions/4185105/ways-to-implement-data-versioning-in-mongodb
 
-    models.Page.findOne({ "url": url }, function(err, data) {
-      var trackedElement = 'h3';
+    // models.Page.findOne({ "url": url }, function(err, data) {
+    models.Page.findOne({ "url": url, "domElement": domElement }, function(err, data) {
+      // var trackedElement = 'h3';
       // var trackedElement = data.currentState.domElement;
-      var trackedContent = $(trackedElement).text();
-      var currentState = { "domElement": trackedElement, "content": trackedContent };
+      // var trackedContent = $(trackedElement).text();
+      var currentContent = $(domElement).text();
+      // var currentState = { "domElement": trackedElement, "content": trackedContent };
 
       if(err) {
           console.log(err);
@@ -243,61 +235,36 @@ var getAndCrawlLink = function(urlObj, done) {
 
       if(data) { // URL already in database
         // console.log('DATA ', data);
-        if(data.currentState.domElement === trackedElement && data.currentState.content !== trackedContent) {
+        // if(data.currentState.domElement === trackedElement && data.currentState.content !== trackedContent) {
+        if(data.currentContent !== currentContent) {
           console.log('CONTENT CHANGED at: ', url);
           // sendMail(); //send email to user
-          models.Page.update( { "url": url} , {$set: {"currentState": currentState}, $push: {"changes" : { "content": trackedContent, "domElement": trackedElement }}}, {upsert: true}, function(err, data) {
+          // models.Page.update( { "url": url} , {$set: {"currentState": currentState}, $push: {"changes" : { "content": trackedContent, "domElement": trackedElement }}}, {upsert: true}, function(err, data) {
+          models.Page.update( { "url": url, "domElement": domElement} , {$set: {"currentContent": currentContent}, $push: {"changes" : { "content": currentContent }}}, {upsert: true}, function(err, data) {
             console.log('Added to history! ', data);
           });
         }
 
-        else if(data.currentState.domElement === trackedElement && data.currentState.content === trackedContent) { // no change in page
+        // else if(data.currentState.domElement === trackedElement && data.currentState.content === trackedContent) { // no change in page
+        else { // no change in page
           console.log('NO CHANGE TO: ', url);
         }
 
-        else {
-          console.log('The DOM element we were tracking changed');
-          models.Page.update( { "url": url} , {$push: {"changes" : { "content": trackedContent, "domElement": trackedElement }}}, {upsert: true}, function(err, data) {
-            console.log('Added to history! ', data);
-          });
-        }
-      }
-
-        // models.Page.update({ "url": url, "title": title, "currentState": currentState },  {upsert: true}, function(err, data) {
-        //   console.log('Record exists! ', url);
-
-        //   // console.log("DATA", data);
-        //   var id = data._id; // id of object
-        //   console.log("ID", id);
-
-        //   // models.Hist.create({ "url": url} );
-
-        //   models.Hist.update( { "url": url} , {$push: {"changes" : { "content": trackedContent }}}, {upsert: true}, function(err, data) {
-
-        //   // models.Hist.update( { "url": url} , {$set: { "tracked" : tracked}, $push: {"changes" : { "content": trackedContent }}}, {upsert: true}, function(err, data) {
-        //   // models.Hist.update( { "url": url} , {$set: { "tracked" : tracked, "changes" : { "content": trackedContent, "date": new Date()} } }, {upsert: true}, function(err, data) {
-        //       console.log('Added to history! ', data);
+        // else {
+        //   console.log('The DOM element we were tracking changed');
+        //   models.Page.update( { "url": url} , {$push: {"changes" : { "content": trackedContent, "domElement": trackedElement }}}, {upsert: true}, function(err, data) {
+        //     console.log('Added to history! ', data);
         //   });
-        // });
-      else { // new URL added to database
+        // }
+      } else { // new URL added to database
         // models.Page.create({ "url": url, "links": linksToCrawl, "title": title, "tracked": tracked }, function(err, data) {
-          models.Page.create({ "url": url, "title": title, "currentState": currentState }, function(err, data) {
+          // {$push: {"changes" : { "content": currentContent }}}
+          var initContent = currentContent;
+          models.Page.create( { "url": url, "domElement": domElement, "title": title, "currentContent": currentContent, "initContent": initContent }, function(err, data) {
           console.log('New URL object created in DB! ', data);
-
-          // console.log("DATA", data);
-          // var id = data._id; // id of object
-          // console.log("ID", id);
-
-          // models.Hist.create({ "url": url} );
-
-          // models.Hist.update( { "url": url} , {$push: {"changes" : { "content": trackedContent }}}, {upsert: true}, function(err, data) {
-
-          // models.Hist.update( { "url": url} , {$set: { "tracked" : tracked}, $push: {"changes" : { "content": trackedContent }}}, {upsert: true}, function(err, data) {
-          // models.Hist.update( {"url": url} , {$set: { "tracked" : tracked, "changes" : { "content": trackedContent, "date" : new Date()} } }, {upsert: true}, function(err, data) {
-              // console.log('Versioning started ', data);
-          // });
         });
       }
+      done();
     });
 
     // var pageObj = new Page(url, links);
@@ -306,7 +273,7 @@ var getAndCrawlLink = function(urlObj, done) {
     // console.log('visitedLinks ', visitedLinks);
     // console.log('urlToPage ', urlToPage);
     // console.log('Length of linksToCrawl as done crawling one link: ', linksToCrawl.length, pageObj.url);
-    done(); // notify workerQueue that we're done
+    // done(); // notify workerQueue that we're done
 
   });
 };
@@ -320,23 +287,23 @@ var concurrency = 2;
 
 var workerQueue = async.queue(crawlWorker, concurrency);
 
-var postBot = function(urlObj, done) {
-  request(urlObj, function(err, response, body) {
-    console.log('in post function...');
-    console.log('Capturing cookie: ', cookieJar.getCookieString(response.request.url));
+// var postBot = function(urlObj, done) {
+//   request(urlObj, function(err, response, body) {
+//     console.log('in post function...');
+//     console.log('Capturing cookie: ', cookieJar.getCookieString(response.request.url));
 
-  if(err && response.statusCode !== 200) {
-      console.log('Request error.');
-    } else {
-      console.log(body);
-    }
-    done();
-  });
-};
+//   if(err && response.statusCode !== 200) {
+//       console.log('Request error.');
+//     } else {
+//       console.log(body);
+//     }
+//     done();
+//   });
+// };
 
-var postingQueue = async.queue(function(urlObj, done) {
-  postBot(urlObj, done);
-}, concurrency);
+// var postingQueue = async.queue(function(urlObj, done) {
+//   postBot(urlObj, done);
+// }, concurrency);
 
 
 // addPostUrlObj = { uri: 'http://192.168.1.177:3000/page/new' };
@@ -373,17 +340,15 @@ var appStart = function() {
   async.series([
     function(callback) {
       workerQueue.push(baseUrlObj);
-      workerQueue.drain = function() {
-        console.log('FIRST CRAWL DONE');
-        // don't boot up the express server until we're finished crawling
-        callback(null);
-      };
+        workerQueue.drain = function() {
+          callback(null);
+        };
     },
     function(callback) {
       compileToCrawl(callback);
-      console.log('dbPages to Crawl in Async Series ', dbPagesToCrawl);
+      // console.log('dbPages to Crawl in Async Series ', dbPagesToCrawl);
       workerQueue.drain = function() {
-        console.log('FIRST CRAWL DONE');
+        // console.log('FIRST CRAWL DONE');
         // don't boot up the express server until we're finished crawling
         callback(null);
       };
@@ -404,17 +369,15 @@ var appStart = function() {
         // push each url into Queue
         callback(null);
       });
-    },
-    function(callback) {
-      workerQueue.drain = function() {
-        setTimeout(function() {
-          console.log('all items have been processed');
-          console.log('*****************************');
-          appStart();
-        }, 10000);
-        // console.log('RESTARTING crawl...');
-        // });
-      };
+    // },
+    // function(callback) {
+    //   workerQueue.drain = function() {
+    //     setTimeout(function() {
+    //       console.log('all items have been processed');
+    //       console.log('*****************************');
+    //       appStart();
+    //     }, 10000);
+    //   };
     }
   ]);
 };

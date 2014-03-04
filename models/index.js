@@ -8,21 +8,25 @@ var Schema = mongoose.Schema;
 
 var pageSchema = new Schema({
   url: String,
+  domElement: String,
   title: String,
-  currentState: {
-    domElement: String,
-    content: String
+  currentContent: String,
+  initContent: String,
+  // currentState: {
+  //   domElement: String,
+  //   content: String
+  // },
+  created_at: {
+    type: Date,
+    default: Date.now
   },
-    created_at: {
+  changes: [{
+    content: String,
+    // domElement: String,
+    updated_at: {
       type: Date,
       default: Date.now
-  }, changes: [{
-      content: String,
-      domElement: String,
-      updated_at: {
-        type: Date,
-        default: Date.now
-      }
+    }
   }]
   // created_date: {
   //   type: Date,
@@ -31,9 +35,9 @@ var pageSchema = new Schema({
   // links: Array
 });
 
-pageSchema.virtual('uri').get(function() {
-  return this.url;
-});
+// pageSchema.virtual('uri').get(function() {
+//   return this.url;
+// });
 
 var histSchema = new Schema({
   _pageId: Schema.Types.ObjectId,

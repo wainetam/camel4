@@ -16,7 +16,7 @@ exports.submit = function(req, res) {
   $ = cheerio.load(body);
   var domContent = $(domElement.text());
 
-  models.Page.create({ "url": url, "currentState.domElement": domElement });
-
-  res.redirect('/');
+  models.Page.create({ "url": url, "initContent": domContent, "domElement": domElement });
+  res.send(200, "You got it.");
+  // res.redirect('/');
 };
