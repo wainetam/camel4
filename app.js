@@ -65,15 +65,15 @@ var smtpTransport = nodemailer.createTransport("SMTP",{
     }
 });
 
-var mailOptions = {
+var sendMail = function(url, newContent, oldContent) {
+  var mailOptions = {
     from: "Jolly Tracker ✔ <jollytracker@gmail.com>", // sender address
     to: "wainetam@gmail.com", // list of receivers
     subject: "Tracked Content has Changed! ✔", // Subject line
-    text: "Hello world ✔", // plaintext body
-    html: "<b>Hello world ✔</b>" // html body
-};
+    text: "Content at " + url + " has changed to: " + newContent + " from: " + oldContent, // plaintext body
+    html: "Content at " + url + " has changed to: " + newContent + " from: " + oldContent // html body
+  };
 
-var sendMail = function() {
   smtpTransport.sendMail(mailOptions, function(error, response){
     if(error){
         console.log(error);
@@ -220,6 +220,7 @@ var getAndCrawlLink = function(urlObj, done) {
       // var trackedElement = data.currentState.domElement;
       // var trackedContent = $(trackedElement).text();
       var currentContent = $(domElement).text();
+      // console.log('CURRENT CONTENT: ', currentContent);
       // var currentState = { "domElement": trackedElement, "content": trackedContent };
 
       if(err) {
@@ -231,7 +232,7 @@ var getAndCrawlLink = function(urlObj, done) {
         // if(data.currentState.domElement === trackedElement && data.currentState.content !== trackedContent) {
         if(data.currentContent !== currentContent) {
           console.log('CONTENT CHANGED at: ', url);
-          // sendMail(); //send email to user
+          // sendMail(url, currentContent, data.currentContent); //send email to user
           // models.Page.update( { "url": url} , {$set: {"currentState": currentState}, $push: {"changes" : { "content": trackedContent, "domElement": trackedElement }}}, {upsert: true}, function(err, data) {
           models.Page.update( { "url": url, "domElement": domElement} , {$set: {"currentContent": currentContent}, $push: {"changes" : { "content": currentContent }}}, {upsert: true}, function(err, data) {
             console.log('Added to history! ', data);
@@ -369,7 +370,7 @@ var appStart = function() {
     //       console.log('all items have been processed');
     //       console.log('*****************************');
     //       appStart();
-    //     }, 10000);
+    //     }, 20000);
     //   };
     }
   ]);

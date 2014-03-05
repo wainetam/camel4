@@ -33,7 +33,7 @@ pageSchema.virtual('last_changed_at').get(function() {
     return this.changes[this.changes.length-1].updated_at;
   } catch(err) {
     console.log(err);
-    return null;
+    return "Unchanged";
   }
 });
 

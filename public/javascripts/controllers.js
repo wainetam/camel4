@@ -3,7 +3,7 @@ angular.module('myApp.controllers', []);
 angular.module('myApp.controllers')
   .controller('SubmitCtrl', ['$scope', '$http', '$location', function($scope, $http, $location) {
     $scope.form = {
-      url: "http://",
+      url: "",
       domElement: "Enter DOM element"
     };
 

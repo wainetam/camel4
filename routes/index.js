@@ -77,10 +77,13 @@ exports.submit = function(req, res) {
   validUrl(url)
     .then(function(response) {
       $ = cheerio.load(response.body);
-      // console.log('BODY in submit', response.body);
+
+      var domContent = $(domElement).text();
+      console.log('BODY in submit', response.body);
+      console.log('DOM CONTENT after submit: ', domContent);
       // var url = req.body.url;
       // var domElement = req.body.domElement;
-      var domContent = $(domElement).text();
+
       // var domContent = "placeholder";
       models.Page.create({ "url": url, "initContent": domContent, "domElement": domElement, "currentContent": domContent });
       res.send(200, "You got it.");
