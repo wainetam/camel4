@@ -22,12 +22,33 @@ angular.module('myApp.controllers')
         console.log("You're shopping on Amazon!");
       }
     });
+  }]);
 
-  }])
+angular.module('myApp.controllers')
   .controller('DashCtrl', ['$scope', '$http', '$location', function($scope, $http, $location) {
-    $http.get('/data/dash').success(function(data) {
-      $scope.trackedUrls = 'hello!';
-      // data[0];
+    $http.get('/data').success(function(data) {
+      $location.path('/');
+      $scope.trackedUrls = data;
+      console.log('data: ', $scope.trackedUrls);
     });
 
+    $scope.deleteItem = function(url) {
+      var urltoDelete = url.url;
+      var currentContent = url.currentContent;
+      var domElement = url.domElement;
+      var itemToDelete = { 'url': urltoDelete, 'currentContent': currentContent, 'domElement': domElement };
+      console.log('trying to delete');
+      $http.delete('/delete', { params: itemToDelete } ).success(function(data) {
+        $location.path('/');
+        console.log("delete successful!");
+      });
+    };
+
   }]);
+
+//   function ReadPostCtrl($scope, $http, $routeParams) {
+//   $http.get('/api/post/' + $routeParams.id).
+//     success(function(data) {
+//       $scope.post = data.post;
+//     });
+// }

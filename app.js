@@ -44,7 +44,8 @@ if ('development' == app.get('env')) {
 app.get('/', routes.index);
 app.post('/submit', routes.submit);
 app.get('/partials/:name', routes.partials);
-app.get('/data/dash', routes.show);
+app.get('/data', routes.show);
+app.get('/delete', routes.delete);
 
 
 app.get('/users', user.list);
@@ -330,12 +331,12 @@ var queuePush = function(pageObj, cb) {
 
 var appStart = function() {
   async.series([
-    function(callback) {
-      workerQueue.push(baseUrlObj);
-        workerQueue.drain = function() {
-          callback(null);
-        };
-    },
+    // function(callback) {
+    //   workerQueue.push(baseUrlObj);
+    //     workerQueue.drain = function() {
+    //       callback(null);
+    //     };
+    // },
     function(callback) {
       compileToCrawl(callback);
       // console.log('dbPages to Crawl in Async Series ', dbPagesToCrawl);

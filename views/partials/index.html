@@ -1,4 +1,35 @@
-<div ng-model="trackedUrls">
-  <h3>Dashboard (from partial):</h3>
-  {{trackedUrls}}
-</div>
+<div>
+  <!-- ng-repeat="url in trackedUrls" -->
+  {% raw %}
+  <h3>Dashboard</h3>
+  <h4>Most Recent Changes</h4>
+<!--   <ul class="changes">
+    <li ng-repeat="change in changes">
+      URL: <a href="{{change.updated_at}}">{{url.url}}</a> <br />
+      DOM Element: {{url.domElement}} <br />
+      Current Content: {{url.currentContent}}
+      <hr>
+    </li>
+  </ul> -->
+  <h4>History</h4>
+  <ul class="history">
+    <li ng-repeat="url in trackedUrls">
+      URL: <a href="{{url.url}}">{{url.url}}</a>
+      <a href='/delete'><i ng-click="deleteItem(url)" class="fa fa-trash-o"></i></a> <br />
+      DOM Element: {{url.domElement}} <br />
+      Current Content: {{url.currentContent}}
+      <hr>
+    </li>
+  </ul>
+
+
+  {% endraw %}
+<!-- </div>
+
+<ul class="phones">
+          <li ng-repeat="phone in phones | filter:query | orderBy:orderPro
+            <a href="#/php" class="thumbnail">ones/{{phone.id}}" class="thumb"><img ng-src="{{phone.imageUrl}}"></a>
+            <a href="#/phones/{{phone.id}}">{{phone.name}}</a>
+            <p>{{phone.snippet}}</p>
+          </li>
+        </ul> -->

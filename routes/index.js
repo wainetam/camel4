@@ -82,7 +82,7 @@ exports.submit = function(req, res) {
       // var domElement = req.body.domElement;
       var domContent = $(domElement).text();
       // var domContent = "placeholder";
-      models.Page.create({ "url": url, "initContent": domContent, "domElement": domElement });
+      models.Page.create({ "url": url, "initContent": domContent, "domElement": domElement, "currentContent": domContent });
       res.send(200, "You got it.");
     })
     .fail(function(error) {
@@ -104,7 +104,17 @@ exports.show = function(req, res) {
       console.log(err);
     }
     console.log('show DASH data', data);
-    res.send(200, { "trackedUrls": data });
+    // res.send(200, { "trackedUrls": data });
+    res.json(data);
+  });
+};
+
+exports.delete = function(req, res) {
+  console.log('BODY', req.body);
+  var itemToDelete = req.params;
+  // var domElement = req.body.domElement;
+  models.Page.findOneAndRemove(itemToDelete, function(err, data) {
+    console.log('deleted!');
   });
 };
 
