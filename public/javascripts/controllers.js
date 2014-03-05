@@ -25,5 +25,9 @@ angular.module('myApp.controllers')
 
   }])
   .controller('DashCtrl', ['$scope', '$http', '$location', function($scope, $http, $location) {
+    $http.get('/data/dash').success(function(data) {
+      $scope.trackedUrls = 'hello!';
+      // data[0];
+    });
 
   }]);

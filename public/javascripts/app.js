@@ -5,7 +5,7 @@ angular.module('myApp')
     $routeProvider
       .when('/', {
         templateUrl: 'partials/index',
-        controller:'SubmitCtrl'
+        controller:'DashCtrl'
       })
       .otherwise({
         redirectTo: '/'

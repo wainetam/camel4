@@ -49,6 +49,7 @@ var validUrl = function(url) {
     })
     .fail(function(error) {
       console.log('ERROR in validURL', error);
+      deferred.reject(error);
     });
     // if(validTest) {
     //   models.Page.create({ "url": url, "initContent": domContent, "domElement": domElement });
@@ -96,7 +97,16 @@ exports.partials = function(req, res) {
   res.render('partials/' + name);
 };
 
-
+exports.show = function(req, res) {
+  console.log('in show route');
+  models.Page.find({}, function(err, data) {
+    if(err) {
+      console.log(err);
+    }
+    console.log('show DASH data', data);
+    res.send(200, { "trackedUrls": data });
+  });
+};
 
 
 
