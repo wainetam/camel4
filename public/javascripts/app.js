@@ -1,4 +1,4 @@
-angular.module('myApp', ['myApp.controllers', 'myApp.services', 'ngRoute']);
+angular.module('myApp', ['myApp.controllers', 'myApp.services', 'myApp.filters', 'ngRoute', 'ngResource']);
 
 angular.module('myApp')
   .config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {

@@ -12,10 +12,7 @@ var pageSchema = new Schema({
   title: String,
   currentContent: String,
   initContent: String,
-  // currentState: {
-  //   domElement: String,
-  //   content: String
-  // },
+
   created_at: {
     type: Date,
     default: Date.now
@@ -28,12 +25,20 @@ var pageSchema = new Schema({
       default: Date.now
     }
   }]
-  // created_date: {
-  //   type: Date,
-  //   default: Date.now
-  // }
-  // links: Array
 });
+
+pageSchema.virtual('last_changed_at').get(function() {
+  try {
+    console.log('THIS.CHANGES', this.changes);
+    return this.changes[this.changes.length-1].updated_at;
+  } catch(err) {
+    console.log(err);
+    return null;
+  }
+});
+
+pageSchema.set('toJSON', { getters: true }); // don't convert to JSON when render (so can recog virtual setters)
+pageSchema.set('toObject', { getters: true });
 
 // pageSchema.virtual('uri').get(function() {
 //   return this.url;

@@ -3,33 +3,29 @@
   {% raw %}
   <h3>Dashboard</h3>
   <h4>Most Recent Changes</h4>
-<!--   <ul class="changes">
-    <li ng-repeat="change in changes">
-      URL: <a href="{{change.updated_at}}">{{url.url}}</a> <br />
-      DOM Element: {{url.domElement}} <br />
-      Current Content: {{url.currentContent}}
+  <ul class="changes">
+    <li ng-repeat="url2 in trackedUrls| orderBy:'-last_changed_at'">
+      URL: <a href="{{url2.url}}">{{ url2.url }}</a> <br />
+      Last Changed: {{url2.last_changed_at}} <br />
+      Creation Date: {{url2.created_at}} <br />
+      DOM Element: {{url2.domElement}} <br />
+      Current Content: {{url2.currentContent}}
       <hr>
     </li>
-  </ul> -->
+  </ul>
   <h4>History</h4>
   <ul class="history">
     <li ng-repeat="url in trackedUrls">
       URL: <a href="{{url.url}}">{{url.url}}</a>
       <a href='/delete'><i ng-click="deleteItem(url)" class="fa fa-trash-o"></i></a> <br />
       DOM Element: {{url.domElement}} <br />
-      Current Content: {{url.currentContent}}
+      Current Content: {{url.currentContent}} <br />
+      Creation Date: {{url.created_at}} <br />
       <hr>
     </li>
   </ul>
 
 
   {% endraw %}
-<!-- </div>
+</div>
 
-<ul class="phones">
-          <li ng-repeat="phone in phones | filter:query | orderBy:orderPro
-            <a href="#/php" class="thumbnail">ones/{{phone.id}}" class="thumb"><img ng-src="{{phone.imageUrl}}"></a>
-            <a href="#/phones/{{phone.id}}">{{phone.name}}</a>
-            <p>{{phone.snippet}}</p>
-          </li>
-        </ul> -->
