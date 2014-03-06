@@ -6,8 +6,8 @@
   <ul class="changes">
     <li ng-repeat="url2 in trackedUrls| orderBy:'-last_changed_at'">
       URL: <a href="{{url2.url}}">{{ url2.url }}</a> <br />
-      Last Changed: {{url2.last_changed_at}} <br />
-      Creation Date: {{url2.created_at}} <br />
+      Last Changed: {{url2.last_changed_at | date: 'medium'}} <br />
+      Creation Date: {{url2.created_at | date: 'medium'}} <br />
       DOM Element: {{url2.domElement}} <br />
       Current Content: {{url2.currentContent}}
       <hr>
@@ -20,7 +20,7 @@
       <a href='/delete'><i ng-click="deleteItem(url)" class="fa fa-trash-o"></i></a> <br />
       DOM Element: {{url.domElement}} <br />
       Current Content: {{url.currentContent}} <br />
-      Creation Date: {{url.created_at}} <br />
+      Creation Date: {{url.created_at | date: 'medium'}} <br />
       <hr>
     </li>
   </ul>
